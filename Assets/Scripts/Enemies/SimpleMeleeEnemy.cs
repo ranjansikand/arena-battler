@@ -1,6 +1,12 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+
+// For proper setup
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(SortingGroup))]
 
 public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
 {
@@ -22,15 +28,23 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
     int _isDead;
 
     // Movement
-    public float _speed = 2.5f;
+    [Header("Movement Variables")]
+    [SerializeField] float _speed = 2.5f;
+    [SerializeField] float _stoppingDistance = 1f;
     float _facingDirection = 0;
 
     // Attacking
     [Header("Attack Variables")]
-    [SerializeField] float _attackDamage = 15;
-    [SerializeField] float _attackRadius;
+    [SerializeField] float _attackDamage = 15f;
+    [SerializeField] float _attackRadius = 0.5f;
     [SerializeField] Transform _attackPoint;
     [SerializeField] LayerMask _enemyLayer;
+
+    // Death
+    [Header("Death and Effects")]
+    [SerializeField] GameObject _deathParticle;
+    [SerializeField] GameObject _lootDrop;
+    [SerializeField, Range(0, 1)] float _lootDropChance;
 
     bool _canMove = true;
     bool _canAttack = true;
@@ -60,11 +74,12 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
         if (_canMove) Move();
     }
 
+    /******* Functions via Update *******/
     void Move()
     {
         float distanceFromTarget = Vector3.Distance(_target.position, transform.position);
 
-        if (distanceFromTarget > 1.25f) {
+        if (distanceFromTarget > _stoppingDistance) {
             // Start animation
             if (!_animator.GetBool(_isWalking)) _animator.SetBool(_isWalking, true);
             // Amount to move this frame
@@ -103,7 +118,7 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
         }
     }
 
-    // Functions called by other scripts
+    /******* Functions called by other scripts *******/
     public void Damage(float damage) {
         _currentHealth -= damage;
 
@@ -128,7 +143,21 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
         _canAttack = true;
     }
 
-    // Functions called by other functions
+    public void EndDeathSequence()
+    {
+        // Play any associated particle effect
+        if (_deathParticle != null) {
+            Instantiate(_deathParticle, _attackPoint.position, Quaternion.identity);
+        }
+        // Chance to drop loot (lower being less likely)
+        if (_lootDrop != null && Random.Range(0f, 1f) < _lootDropChance) {
+            Instantiate(_lootDrop, _attackPoint.position, Quaternion.identity);
+        }
+
+        Invoke(nameof(DestroyThisObject), 0.05f);
+    }
+
+    /******* Functions called by other functions *******/
     IEnumerator SpriteUpdateRoutine() {
         ChangeToColor(Color.red);
         _animator.SetTrigger(_isHurt);
@@ -150,5 +179,10 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
         foreach (SpriteRenderer bodyPart in _spriteRenderers) {
             bodyPart.color = newColor;
         }
+    }
+
+    void DestroyThisObject()
+    {
+        Destroy(gameObject);
     }
 }
