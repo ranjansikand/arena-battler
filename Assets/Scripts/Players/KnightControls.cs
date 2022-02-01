@@ -81,6 +81,9 @@ public class KnightControls : MonoBehaviour
     }
 
     void OnAttack(InputAction.CallbackContext context) {
+        // Do not attack if stamina remaining is insufficient
+        if (!CanPerformAction(ATTACK_STAMINA_COST)) return;
+
         // Trigger attack animation
         _animator.SetTrigger(_isAttacking);
     }
@@ -162,9 +165,6 @@ public class KnightControls : MonoBehaviour
 
     // Called by attack animation
     void HandleAttack() {
-        // If stamina remaining is insufficient
-        if (!CanPerformAction(ATTACK_STAMINA_COST)) return;
-
         // Generate hit field
         Collider2D[] hits = Physics2D.OverlapCircleAll(_attackPoint.position, _attackRadius, _enemyLayer);
 

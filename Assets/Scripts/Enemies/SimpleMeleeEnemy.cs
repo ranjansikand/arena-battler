@@ -11,7 +11,7 @@ using UnityEngine.Rendering;
 public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
 {
     Rigidbody2D _rigidbody;
-    BoxCollider2D _collider;
+    Collider2D[] _colliders;
     Animator _animator;
     SpriteRenderer[] _spriteRenderers;
     Transform _target;
@@ -24,7 +24,6 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
     // Animation hashes
     int _isWalking;
     int _isAttacking;
-    int _isHurt;
     int _isDead;
 
     // Movement
@@ -53,7 +52,7 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
     {
         // Set components and references
         _rigidbody = GetComponent<Rigidbody2D>();
-        _collider = GetComponent<BoxCollider2D>();
+        _colliders = GetComponents<BoxCollider2D>();
         _animator = GetComponent<Animator>();
         _spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
         _target = GameObject.FindGameObjectWithTag("Princess").transform;
@@ -61,7 +60,6 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
         // Set animation hashes
         _isWalking = Animator.StringToHash("isWalking");
         _isAttacking = Animator.StringToHash("isAttacking");
-        _isHurt = Animator.StringToHash("isHurt");
         _isDead = Animator.StringToHash("isDead");
 
         // Set variables
@@ -128,6 +126,7 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
 
     public void PerformAttack()
     {
+        // Called by attack animation
         Collider2D[] hits = Physics2D.OverlapCircleAll(_attackPoint.position, _attackRadius, _enemyLayer);
 
         // Check hit objects
@@ -140,11 +139,14 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
 
     public void ResetAttack()
     {
+        // Called by attack animation
         _canAttack = true;
     }
 
     public void EndDeathSequence()
     {
+        // Called by death animation
+        
         // Play any associated particle effect
         if (_deathParticle != null) {
             Instantiate(_deathParticle, _attackPoint.position, Quaternion.identity);
@@ -154,13 +156,15 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
             Instantiate(_lootDrop, _attackPoint.position, Quaternion.identity);
         }
 
+        // Add score
+        GameManager.instance.AddScore();
+
         Invoke(nameof(DestroyThisObject), 0.05f);
     }
 
     /******* Functions called by other functions *******/
     IEnumerator SpriteUpdateRoutine() {
         ChangeToColor(Color.red);
-        _animator.SetTrigger(_isHurt);
 
         yield return _damageIndicatorDelay;
 
@@ -170,7 +174,9 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
 
     void Dead() {
         _canMove = false;
-        _collider.enabled = false;
+        foreach (Collider2D collider in _colliders) {
+            collider.enabled = false;
+        }
         _animator.SetTrigger(_isDead);
         ChangeToColor(Color.grey);
     }

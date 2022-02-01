@@ -6,7 +6,7 @@ public class PrincessControls : MonoBehaviour, IDamageable
 {
     PlayerControls _playerInput;
     Rigidbody2D _rigidbody;
-    BoxCollider2D _collider;
+    Collider2D[] _colliders;
     Animator _animator;
     SpriteRenderer[] _spriteRenderers;
     StatusBar _healthbar;
@@ -36,7 +36,7 @@ public class PrincessControls : MonoBehaviour, IDamageable
         // Components and Game Objects
         _playerInput = new PlayerControls();
         _rigidbody = GetComponent<Rigidbody2D>();
-        _collider = GetComponent<BoxCollider2D>();
+        _colliders = GetComponents<Collider2D>();
         _animator = GetComponent<Animator>();
         _spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
         _healthbar = GameObject.Find("PrincessBar").GetComponent<StatusBar>();
@@ -125,9 +125,12 @@ public class PrincessControls : MonoBehaviour, IDamageable
 
     void Dead() {
         _canMove = false;
-        _collider.enabled = false;
+        foreach (Collider2D collider in _colliders) {
+            collider.enabled = false;
+        }
         _animator.SetTrigger(_isDead);
         ChangeToColor(Color.grey);
+        GameManager.instance.EndGame();
     }
 
     void ChangeToColor(Color newColor) {

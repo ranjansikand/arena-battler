@@ -149,6 +149,52 @@ public class @PlayerControls : IInputActionCollection, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""General"",
+            ""id"": ""9239abf9-11a4-4855-aaee-48f937e3393a"",
+            ""actions"": [
+                {
+                    ""name"": ""Pause"",
+                    ""type"": ""Button"",
+                    ""id"": ""2860f913-312e-4dda-a1e2-a60180f6ffba"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
+                },
+                {
+                    ""name"": ""Quit"",
+                    ""type"": ""Button"",
+                    ""id"": ""591e910d-722c-4d26-9603-1faba6bfcfbb"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""c0fb6e74-f537-4841-8474-17c9f4bed2ac"",
+                    ""path"": ""<Keyboard>/p"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""120ab4ed-1218-409d-b78b-afdcc8eee425"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Quit"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -161,6 +207,10 @@ public class @PlayerControls : IInputActionCollection, IDisposable
         m_Knight_Movement = m_Knight.FindAction("Movement", throwIfNotFound: true);
         m_Knight_Attack = m_Knight.FindAction("Attack", throwIfNotFound: true);
         m_Knight_Sprint = m_Knight.FindAction("Sprint", throwIfNotFound: true);
+        // General
+        m_General = asset.FindActionMap("General", throwIfNotFound: true);
+        m_General_Pause = m_General.FindAction("Pause", throwIfNotFound: true);
+        m_General_Quit = m_General.FindAction("Quit", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -288,6 +338,47 @@ public class @PlayerControls : IInputActionCollection, IDisposable
         }
     }
     public KnightActions @Knight => new KnightActions(this);
+
+    // General
+    private readonly InputActionMap m_General;
+    private IGeneralActions m_GeneralActionsCallbackInterface;
+    private readonly InputAction m_General_Pause;
+    private readonly InputAction m_General_Quit;
+    public struct GeneralActions
+    {
+        private @PlayerControls m_Wrapper;
+        public GeneralActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
+        public InputAction @Pause => m_Wrapper.m_General_Pause;
+        public InputAction @Quit => m_Wrapper.m_General_Quit;
+        public InputActionMap Get() { return m_Wrapper.m_General; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(GeneralActions set) { return set.Get(); }
+        public void SetCallbacks(IGeneralActions instance)
+        {
+            if (m_Wrapper.m_GeneralActionsCallbackInterface != null)
+            {
+                @Pause.started -= m_Wrapper.m_GeneralActionsCallbackInterface.OnPause;
+                @Pause.performed -= m_Wrapper.m_GeneralActionsCallbackInterface.OnPause;
+                @Pause.canceled -= m_Wrapper.m_GeneralActionsCallbackInterface.OnPause;
+                @Quit.started -= m_Wrapper.m_GeneralActionsCallbackInterface.OnQuit;
+                @Quit.performed -= m_Wrapper.m_GeneralActionsCallbackInterface.OnQuit;
+                @Quit.canceled -= m_Wrapper.m_GeneralActionsCallbackInterface.OnQuit;
+            }
+            m_Wrapper.m_GeneralActionsCallbackInterface = instance;
+            if (instance != null)
+            {
+                @Pause.started += instance.OnPause;
+                @Pause.performed += instance.OnPause;
+                @Pause.canceled += instance.OnPause;
+                @Quit.started += instance.OnQuit;
+                @Quit.performed += instance.OnQuit;
+                @Quit.canceled += instance.OnQuit;
+            }
+        }
+    }
+    public GeneralActions @General => new GeneralActions(this);
     public interface IPrincessActions
     {
         void OnMovement(InputAction.CallbackContext context);
@@ -297,5 +388,10 @@ public class @PlayerControls : IInputActionCollection, IDisposable
         void OnMovement(InputAction.CallbackContext context);
         void OnAttack(InputAction.CallbackContext context);
         void OnSprint(InputAction.CallbackContext context);
+    }
+    public interface IGeneralActions
+    {
+        void OnPause(InputAction.CallbackContext context);
+        void OnQuit(InputAction.CallbackContext context);
     }
 }
