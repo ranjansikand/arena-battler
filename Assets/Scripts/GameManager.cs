@@ -1,10 +1,11 @@
-// Script that spawns enemies
+// Script that spawns enemies, controls game over, and allows restarting
 
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -30,7 +31,6 @@ public class GameManager : MonoBehaviour
 
     [Header("--- Enemies ---")]
     [SerializeField] List<GameObject> _commonEnemies = new List<GameObject>();
-    [SerializeField] List<GameObject> _rareEnemies = new List<GameObject>();
 
 
     [Header("--- Wave Control Variables ---")]
@@ -46,10 +46,12 @@ public class GameManager : MonoBehaviour
     [SerializeField] Image _gameOverScreen;
     [SerializeField] Text _scoreCounter;
     [SerializeField] Text _waveCounter;
+    [SerializeField] Text _highScoreText;
 
     // Score tracking
     int _enemiesDefeated = 0;
     int _minimumScoreBeforeNextWave = -1;
+    int _highScore;
 
     // Conditions
     bool _paused = false;
@@ -64,6 +66,7 @@ public class GameManager : MonoBehaviour
 
         _timeBetweenWaves = new WaitForSeconds(_waveDelay);
         _enemiesThisWave = _startingEnemyCount;
+        _highScore = PlayerPrefs.GetInt("HighScore", 0);
 
         _pauseMenu.gameObject.SetActive(false);
         _gameOverScreen.gameObject.SetActive(false);
@@ -86,7 +89,7 @@ public class GameManager : MonoBehaviour
     }
 
     private void OnQuitPressed(InputAction.CallbackContext context) {
-        // Check if high score was obtained
+        CheckHighScore();
 
         // Quit game
         Application.Quit();
@@ -131,13 +134,11 @@ public class GameManager : MonoBehaviour
 
     GameObject SelectEnemy() {
         int chance = Random.Range(1, 11);
-        if (chance < 5) {
+        if (chance < 6) {
             // guaranteed weak one
             return _commonEnemies[0];
-        } else if (chance < 7) {
-            // guaranteed second level
-            return _commonEnemies[1];
-        } else {
+        }
+        else {
             // Any random enemy
             return _commonEnemies[Random.Range(0, _commonEnemies.Count)];
         }
@@ -148,7 +149,11 @@ public class GameManager : MonoBehaviour
         _gameOver = true;
         StopAllCoroutines();
 
-        // Check if high score was obtained
+        if (CheckHighScore()) {
+            _highScoreText.text = "New high score: " + _enemiesDefeated;
+        } else {
+            _highScoreText.text = "High Score: " + _highScore;
+        }
 
         // Display Game Over text
         _gameOverScreen.gameObject.SetActive(true);
@@ -172,8 +177,12 @@ public class GameManager : MonoBehaviour
         _scoreCounter.text = _enemiesDefeated.ToString();
     }
 
-    void CheckHighScore() {
-        // Check score from PlayerPrefs here
+    bool CheckHighScore() {
+        if (_enemiesDefeated > _highScore) {
+            PlayerPrefs.SetInt("HighScore", _enemiesDefeated);
+            return true;
+        }
+        return false;
     }
 
     void ResumeGame() {
@@ -188,5 +197,14 @@ public class GameManager : MonoBehaviour
         _pauseMenu.gameObject.SetActive(true);
 
         _paused = true;
+    }
+
+    // Restart and quit
+    public void Restart() {
+        SceneManager.LoadScene(1);  // Restart this scene
+    }
+
+    public void Quit() {
+        SceneManager.LoadScene(0);  // Go to title menu
     }
 }

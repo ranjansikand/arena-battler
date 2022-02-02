@@ -727,7 +727,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _maxHealth: 15
-  _speed: 1.5
+  _speed: 2.5
   _stoppingDistance: 1
   _attackDamage: 15
   _attackRadius: 0.5
