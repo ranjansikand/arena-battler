@@ -24,6 +24,8 @@ public class GameManager : MonoBehaviour
         _playerInput = new PlayerControls();
         _playerInput.General.Pause.performed += OnPausePressed;
         _playerInput.General.Quit.performed += OnQuitPressed;
+
+        _masterVolume = PlayerPrefs.GetFloat("MasterVolume", 0.5f);
     }
     #endregion
 
@@ -42,11 +44,23 @@ public class GameManager : MonoBehaviour
     int _enemiesThisWave, _waveCount = 1;
 
     [Header("---- UI Fields ----")]
-    [SerializeField] Image _pauseMenu;
+    [SerializeField] GameObject _playerUI;
+    [SerializeField] GameObject _pauseMenu;
     [SerializeField] Image _gameOverScreen;
     [SerializeField] Text _scoreCounter;
     [SerializeField] Text _waveCounter;
     [SerializeField] Text _highScoreText;
+    [SerializeField] Slider _volumeControl;
+
+    [Header("---- Audio ----")]
+    [SerializeField] AudioSource _musicSource;
+    [SerializeField] AudioSource _knightFootstep;
+    [SerializeField] AudioSource _princessFootstep;
+    [SerializeField] AudioClip[] _backgroundTracks;
+    [SerializeField] AudioClip _gameOverSound;
+    [SerializeField] AudioClip _highScoreSound;
+
+    float _masterVolume;
 
     // Score tracking
     int _enemiesDefeated = 0;
@@ -61,18 +75,34 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        if (_pauseMenu == null) _pauseMenu = GameObject.Find("PauseMenu").GetComponent<Image>();
+        if (_pauseMenu == null) _pauseMenu = GameObject.Find("PauseMenu");
         if (_gameOverScreen == null) _gameOverScreen = GameObject.Find("GameOver").GetComponent<Image>();
 
+        // Set up variables
         _timeBetweenWaves = new WaitForSeconds(_waveDelay);
         _enemiesThisWave = _startingEnemyCount;
         _highScore = PlayerPrefs.GetInt("HighScore", 0);
 
-        _pauseMenu.gameObject.SetActive(false);
+        // Set up audio
+        _volumeControl.value = _masterVolume;
+        UpdateVolume();
+
+        // Set up UI
+        _playerUI.SetActive(true);
+        _pauseMenu.SetActive(false);
         _gameOverScreen.gameObject.SetActive(false);
+
+        // Start UI
         _scoreCounter.text = "0";
         _waveCounter.text = "Enemies incoming!";
         StartCoroutine(WaveManagerRoutine());
+    }
+
+    void Update() {
+        if (!_gameOver && !_musicSource.isPlaying) {
+            _musicSource.clip = _backgroundTracks[Random.Range(0, _backgroundTracks.Length)];
+            _musicSource.Play();
+        }
     }
 
     // Input Actions
@@ -148,12 +178,16 @@ public class GameManager : MonoBehaviour
     {
         _gameOver = true;
         StopAllCoroutines();
+        
 
         if (CheckHighScore()) {
             _highScoreText.text = "New high score: " + _enemiesDefeated;
+            _musicSource.clip = _highScoreSound;
         } else {
             _highScoreText.text = "High Score: " + _highScore;
+            _musicSource.clip = _gameOverSound;
         }
+        _musicSource.Play();
 
         // Display Game Over text
         _gameOverScreen.gameObject.SetActive(true);
@@ -187,24 +221,37 @@ public class GameManager : MonoBehaviour
 
     void ResumeGame() {
         Time.timeScale = 1;
-        _pauseMenu.gameObject.SetActive(false);
+        _pauseMenu.SetActive(false);
+        _playerUI.SetActive(true);
 
         _paused = false;
     }
 
     void PauseGame() {
         Time.timeScale = 0;
-        _pauseMenu.gameObject.SetActive(true);
+        _pauseMenu.SetActive(true);
+        _playerUI.SetActive(false);
 
         _paused = true;
     }
 
-    // Restart and quit
+    public float CurrentMasterVolume() {
+        return _masterVolume;
+    }
+
+    // Button Actions
     public void Restart() {
         SceneManager.LoadScene(1);  // Restart this scene
     }
 
     public void Quit() {
         SceneManager.LoadScene(0);  // Go to title menu
+    }
+
+    public void UpdateVolume() {
+        _masterVolume = _volumeControl.value;
+        _musicSource.volume = _masterVolume * 0.5f;
+        _knightFootstep.volume = _princessFootstep.volume = _masterVolume;
+        PlayerPrefs.SetFloat("MasterVolume", _masterVolume);
     }
 }

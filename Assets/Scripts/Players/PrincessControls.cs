@@ -10,6 +10,7 @@ public class PrincessControls : MonoBehaviour, IDamageable
     Animator _animator;
     SpriteRenderer[] _spriteRenderers;
     StatusBar _healthbar;
+    AudioSource _audioSource;
     
     // Static variables
     static float _speed = 4.0f;
@@ -29,6 +30,10 @@ public class PrincessControls : MonoBehaviour, IDamageable
     int _isHurt;
     int _isDead;
 
+    [Header("Audio")]
+    [SerializeField] AudioClip[] _footstepSounds;
+    [SerializeField] AudioClip[] _hurtSounds;
+
     Vector2 _currentMovementInput;
     
     void Awake()
@@ -40,6 +45,7 @@ public class PrincessControls : MonoBehaviour, IDamageable
         _animator = GetComponent<Animator>();
         _spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
         _healthbar = GameObject.Find("PrincessBar").GetComponent<StatusBar>();
+        _audioSource = GetComponent<AudioSource>();
 
         // Animation hashes
         _isWalking = Animator.StringToHash("isWalking");
@@ -72,14 +78,23 @@ public class PrincessControls : MonoBehaviour, IDamageable
         Move();
     }
 
+    /***** Functions called from other scripts/events *****/
     public void Damage(float damage) {
         if (_canTakeDamage) {
             _currentHealth -= damage;
             _healthbar.Decrease(damage);
 
             if (_currentHealth <= 0) { Dead(); }
-            else { StartCoroutine(SpriteUpdateRoutine()); }
+            else { 
+                _audioSource.clip = _hurtSounds[Random.Range(0, _hurtSounds.Length)];
+                StartCoroutine(SpriteUpdateRoutine()); 
+            }
         }
+    }
+
+    public void PlayFootstepSound() {
+        // _audioSource.clip = _footstepSounds[Random.Range(0, _footstepSounds.Length)];
+        // _audioSource.Play();
     }
 
     /***** Functions called by other functions *****/

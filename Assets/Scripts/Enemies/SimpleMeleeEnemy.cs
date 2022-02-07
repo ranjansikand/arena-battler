@@ -45,6 +45,12 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
     [SerializeField] GameObject _lootDrop;
     [SerializeField, Range(0, 1)] float _lootDropChance;
 
+    [Header("Audio")]
+    [SerializeField] AudioSource _audioSource;
+    [SerializeField] AudioClip[] _attackSounds;
+    [SerializeField] AudioClip[] _hurtSounds;  // for armored enemies only
+    [SerializeField] AudioClip[] _deathSounds;
+
     bool _canMove = true;
     bool _canAttack = true;
     
@@ -121,7 +127,11 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
         _currentHealth -= damage;
 
         if (_currentHealth <= 0) { Dead(); }
-        else { StartCoroutine(SpriteUpdateRoutine()); }
+        else { 
+            StartCoroutine(SpriteUpdateRoutine()); 
+            _audioSource.clip = _hurtSounds[Random.Range(0, _hurtSounds.Length)];
+            _audioSource.Play();
+        }
     }
 
     public void PerformAttack()
@@ -177,8 +187,12 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
         foreach (Collider2D collider in _colliders) {
             collider.enabled = false;
         }
+        // Visual Effect
         _animator.SetTrigger(_isDead);
         ChangeToColor(Color.grey);
+        // Audio Effect
+        _audioSource.clip = _deathSounds[Random.Range(0, _deathSounds.Length)];
+        _audioSource.Play();
     }
 
     void ChangeToColor(Color newColor) {
@@ -190,5 +204,15 @@ public class SimpleMeleeEnemy : MonoBehaviour, IDamageable
     void DestroyThisObject()
     {
         Destroy(gameObject);
+    }
+
+    void PlayAttackSound()
+    {
+        // Reset Volume (better this way than via update)
+        _audioSource.volume = GameManager.instance.CurrentMasterVolume();
+
+        // Play Sound
+        _audioSource.clip = _attackSounds[Random.Range(0, _attackSounds.Length)];
+        _audioSource.Play();
     }
 }

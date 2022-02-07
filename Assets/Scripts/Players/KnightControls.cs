@@ -9,12 +9,17 @@ public class KnightControls : MonoBehaviour
     Animator _animator;
     Camera _camera;
     StatusBar _staminaBar;
+    AudioSource _audioSource;
 
     // Attacking
     [Header("Attack Variables")]
     [SerializeField] Transform _attackPoint;
     [SerializeField] float _attackRadius = 0.5f;
     [SerializeField] LayerMask _enemyLayer;
+
+    [Header("Audio")]
+    [SerializeField] AudioClip[] _footstepSounds;
+    [SerializeField] AudioClip[] _attackSounds;
     
     
     // Reference variables
@@ -48,6 +53,7 @@ public class KnightControls : MonoBehaviour
         _animator = GetComponent<Animator>();
         _camera = Camera.main;
         _staminaBar = GameObject.Find("KnightBar").GetComponent<StatusBar>();
+        _audioSource = GetComponent<AudioSource>();
 
         // Animation hashes
         _isWalking = Animator.StringToHash("isWalking");
@@ -177,6 +183,16 @@ public class KnightControls : MonoBehaviour
 
         // Apply stamina cost
         UpdateStamina(ATTACK_STAMINA_COST);
+    }
+
+    public void PlayFootstepSound() {
+        // _audioSource.clip = _footstepSounds[Random.Range(0, _footstepSounds.Length)];
+        // _audioSource.Play();
+    }
+
+    public void PlayAttackSound() {
+        _audioSource.clip = _attackSounds[Random.Range(0, _attackSounds.Length)];
+        _audioSource.Play();
     }
 
     /******* Functions called by other functions *******/
